@@ -26,8 +26,8 @@ Sistema em **Java** que gera **pranchas de Comunicação Aumentativa e Alternati
 - ✅ Modelo instalado e testado (respostas reais coletadas)
 - ✅ Requisitos funcionais e não funcionais definidos
 - ✅ Repositório Git configurado
-- 🔧 Estrutura Maven/IntelliJ em configuração
-- ⏳ Implementação do código Java (`AacBoardService`) — próxima etapa
+- ✅ Estrutura Maven/IntelliJ em configuração
+- ✅ Implementação do código Java (`AacBoardService`) — próxima etapa
 
 ## Entrega
 
