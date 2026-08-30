@@ -11,7 +11,7 @@ public class Main {
     private static final String MODELO_GERADOR = "hf.co/tardellirs/aac-board-generator-770m-ptbr-GGUF:Q8_0";
     private static final String MODELO_EMBEDDINGS = "embeddinggemma";
 
-    // Catálogo simplificado de pictogramas (demonstração — o real seria o catálogo ARASAAC completo)
+    
     private static final List<String> CATALOGO_PICTOGRAMAS = List.of(
             "brincar", "escorregador", "balanço", "areia", "correr", "pular",
             "amigo", "balde", "cantar", "água", "comer", "beber", "banheiro",
@@ -25,7 +25,7 @@ public class Main {
         OllamaAPI ollamaAPI = new OllamaAPI("http://localhost:11434");
         ollamaAPI.setRequestTimeoutSeconds(180);
 
-        // ---- Pedido dinâmico via entrada do usuário ----
+        
         Scanner scanner = new Scanner(System.in);
         System.out.print("Digite o pedido da prancha (ex: monta uma prancha de brincar no parquinho): ");
         String pedido = scanner.nextLine();
@@ -46,14 +46,14 @@ public class Main {
         System.out.println("\nGerando prancha, aguarde...");
         OllamaResult resultado = ollamaAPI.generate(MODELO_GERADOR, prompt, false, opcoes);
 
-        // ---- Pré-calcula os embeddings do catálogo de pictogramas (uma vez) ----
+        
         Map<String, List<Double>> embeddingsCatalogo = new LinkedHashMap<>();
         for (String pictograma : CATALOGO_PICTOGRAMAS) {
             List<Double> vetorPictograma = ollamaAPI.generateEmbeddings(MODELO_EMBEDDINGS, pictograma);
             embeddingsCatalogo.put(pictograma, vetorPictograma);
         }
 
-        // ---- Processa cada item gerado: valida o tipo + acha o pictograma mais parecido ----
+        
         System.out.println("\n--- Prancha gerada ---");
         for (String linha : resultado.getResponse().split("\n")) {
             linha = linha.replaceFirst("^[\\*\\-]\\s*", "").trim();
