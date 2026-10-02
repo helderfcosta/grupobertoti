@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+ 
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador AAC</title>
+     
+    <style>
+         
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+         
+        h1 {
+            color: #333;
+        }
+
+         
+        input {
+            padding: 8px;
+            width: 250px;
+        }
+
+         
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+         
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 700px;
+        }
+
+         
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+         
+        th {
+            background-color: #f0f0f0;
+        }
+
+         
+        #mensagem {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+         
+    </style>
+     
+</head>
+ 
+<body>
+ 
+<h1>Gerador de Pranchas AAC</h1>
+ 
+<input
+        id="tema"
+        type="text"
+        placeholder="Digite um tema">
+ 
+<button onclick="gerarPrancha()">
+    Gerar Prancha
+</button>
+ 
+<div id="mensagem"></div>
+ 
+<table id="tabelaResultado">
+     
+    <thead>
+     
+    <tr>
+        <th>Palavra</th>
+        <th>Tipo</th>
+        <th>Sinônimo</th>
+    </tr>
+     
+    </thead>
+     
+    <tbody id="corpoTabela">
+     
+    </tbody>
+     
+</table>
+ 
+<script>
+
+    async function gerarPrancha() {
+
+        const tema =
+            document.getElementById("tema").value;
+
+        const mensagem =
+            document.getElementById("mensagem");
+
+        const corpoTabela =
+            document.getElementById("corpoTabela");
+
+        corpoTabela.innerHTML = "";
+
+        if (!tema.trim()) {
+
+            mensagem.innerText =
+                "Digite um tema.";
+
+            return;
+        }
+
+        mensagem.innerText =
+            "Gerando prancha...";
+
+        try {
+
+            const resposta =
+                await fetch("/aac/gerar", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        tema: tema
+                    })
+
+                });
+
+            const texto =
+                await resposta.text();
+
+            if (texto.startsWith("ERRO")) {
+
+                mensagem.innerText = texto;
+                return;
+            }
+
+            mensagem.innerText =
+                "Prancha gerada com sucesso.";
+
+            const linhas =
+                texto.split("\n");
+
+            linhas.forEach(linha => {
+
+                const partes =
+                    linha.split("|");
+
+                if (partes.length === 3) {
+
+                    const novaLinha =
+                        document.createElement("tr");
+
+                    novaLinha.innerHTML =
+                        `<td>${partes[0]}</td>
+<td>${partes[1]}</td>
+<td>${partes[2]}</td>`;
+
+                    corpoTabela.appendChild(
+                        novaLinha
+                    );
+                }
+
+            });
+
+        } catch (erro) {
+
+            mensagem.innerText =
+                "Erro ao comunicar com o servidor.";
+
+        }
+    }
+
+</script>
+ 
+</body>
+</html>
