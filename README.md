@@ -168,5 +168,6 @@ Entrega da equipe: **02/10**
 
 ## Integrantes
 
+-Daniel da Silva Carvalho Franco
 - Hélder Costa
-- _(adicione os demais integrantes da equipe)_
+- Yan Vitor Siqueira Bergantin
