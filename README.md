@@ -1,173 +1,53 @@
-# AAC System — Gerador de Pranchas de CAA
+# AAC Board System – Pranchas de comunicação com IA local
 
-Sistema web em **Java (Spring Boot)** que gera **pranchas de Comunicação Aumentativa e Alternativa (CAA)**: conjuntos de palavras/símbolos usados por pessoas com dificuldade de fala para se comunicar.
+Aplicação web que gera **pranchas de Comunicação Aumentativa e Alternativa (CAA)**, conjuntos de palavras e símbolos usados por pessoas com dificuldade de fala. O usuário digita um tema, por exemplo "brincar no parquinho", e recebe 12 palavras relacionadas, com classe gramatical e sinônimo.
 
-O usuário digita um tema (ex.: "brincar no parquinho") e o sistema devolve uma lista de itens relacionados, com a classe gramatical e um sinônimo de cada um.
-
-> Versão anterior do projeto (aplicação Java de console): [branch `projeto-v1-aac`](https://github.com/helderfcosta/grupobertoti/tree/projeto-v1-aac)
+O modelo de IA roda **100% localmente**, sem internet e sem custo de API externa.
 
 ## Como funciona
 
 1. O usuário digita um tema na página web.
-2. O front-end envia o tema para o back-end (`POST /aac/gerar`).
-3. O `OllamaService` monta um prompt e o envia a um **modelo de IA rodando localmente** via [Ollama](https://ollama.com).
-4. O modelo responde com 12 linhas no formato `palavra|tipo|sinonimos`.
-5. O back-end corrige sinônimos repetidos (quando o modelo devolve o sinônimo igual à palavra) e retorna o resultado.
-6. A página exibe os itens em uma tabela.
+2. O front-end envia o tema para a API (`POST /aac/gerar`).
+3. O `OllamaService` monta o prompt e consulta o modelo no Ollama.
+4. A resposta passa por um pós-processamento: linhas fora do padrão são descartadas e sinônimos repetidos são corrigidos.
+5. A página exibe a prancha em uma tabela (palavra, tipo e sinônimo).
 
-### Formato da resposta do modelo
+## Stack
 
-Cada linha segue o padrão `palavra|tipo|sinonimos`, onde `tipo` é uma destas letras:
+- **Java 21** e **Spring Boot**: servidor, rotas e injeção de dependências
+- **Ollama**: executa o modelo de linguagem localmente
+- **RestTemplate**: comunicação HTTP entre a API e o Ollama
+- **HTML, CSS e JavaScript puro**: interface web
+- **Maven**: gerenciamento de dependências
 
-| Letra | Tipo        |
-|-------|-------------|
-| `v`   | verbo       |
-| `s`   | substantivo |
-| `a`   | adjetivo    |
-| `e`   | expressão   |
-| `l`   | local       |
-| `p`   | pronome     |
+## Modelo utilizado
 
-Exemplo:
+[`aac-board-generator-770m-ptbr`](https://huggingface.co/tardellirs/aac-board-generator-770m-ptbr-GGUF), de **tardellirs**: modelo de 770M de parâmetros baseado no Gemma 3 e treinado para gerar pranchas de CAA em português do Brasil.
 
-```
-parquinho|l|playground
-escorregador|s|escorrega
-balançar|v|balanço
-amigo|s|colega
-```
+## Estrutura
 
-## Modelo de IA utilizado
+| Componente | Função |
+| --- | --- |
+| `AacController` | Recebe o tema em `POST /aac/gerar` e devolve a prancha |
+| `BoardRequest` | Representa o corpo da requisição (`{"tema": "..."}`) |
+| `OllamaService` | Monta o prompt, chama o Ollama e trata a resposta |
+| `index.html` | Interface onde o usuário digita o tema e vê a prancha |
 
-[`aac-board-generator-770m-ptbr-GGUF`](https://huggingface.co/tardellirs/aac-board-generator-770m-ptbr-GGUF) (quantização `Q8_0`): modelo de 770M de parâmetros, baseado no Gemma 3 (Google), treinado especificamente para gerar pranchas de CAA em português do Brasil. Roda 100% localmente, sem depender de internet durante o uso e sem pagar por API externa.
+## Como rodar
 
-## Stack técnica
+1. Instale o [Ollama](https://ollama.com) e baixe o modelo acima.
+2. Com o Ollama ligado, rode o projeto: `mvn spring-boot:run`
+3. Abra `http://localhost:8080` no navegador.
 
-- **Java 21**
-- **Spring Boot 4.1.1** (Spring Web MVC + Thymeleaf)
-- **Maven** (com Maven Wrapper incluído)
-- **Lombok**
-- **RestTemplate** para comunicação com a API do Ollama
-- **Ollama** para executar o modelo localmente
-- Front-end em HTML, CSS e JavaScript puro (`fetch`)
+## Status
 
-## Pré-requisitos
+- ✅ API e integração com o modelo local
+- ✅ Pós-processamento e tratamento de erro quando o Ollama não responde
+- ✅ Interface web com a prancha em tabela
+- 🔜 Pictogramas para cada palavra, usando a API pública do [ARASAAC](https://arasaac.org)
+- 🔜 Exibição em cartões coloridos por classe gramatical
+- 🔜 Cache das buscas e testes automatizados
 
-- [JDK 21](https://adoptium.net/) ou superior
-- [Ollama](https://ollama.com/download) instalado e em execução
-- O modelo baixado no Ollama (veja abaixo)
+## Contexto
 
-## Como executar
-
-### 1. Baixe o modelo no Ollama
-
-```bash
-ollama pull hf.co/tardellirs/aac-board-generator-770m-ptbr-GGUF:Q8_0
-```
-
-Confirme que o Ollama está rodando em `http://localhost:11434` (é a porta padrão).
-
-### 2. Clone o repositório
-
-```bash
-git clone https://github.com/helderfcosta/grupobertoti.git
-cd grupobertoti/aac-system
-```
-
-### 3. Inicie a aplicação
-
-Linux / macOS / Git Bash:
-
-```bash
-./mvnw spring-boot:run
-```
-
-Windows (Prompt de Comando ou PowerShell):
-
-```bash
-mvnw.cmd spring-boot:run
-```
-
-### 4. Acesse no navegador
-
-```
-http://localhost:8080
-```
-
-Digite um tema, clique em **Gerar Prancha** e aguarde o resultado.
-
-## Configuração
-
-O endereço do Ollama fica em `src/main/resources/application.properties`:
-
-```properties
-ollama.url=http://localhost:11434/api/generate
-```
-
-Altere esse valor se o Ollama estiver rodando em outra máquina ou porta.
-
-## API
-
-### `POST /aac/gerar`
-
-Gera uma prancha a partir de um tema.
-
-**Requisição**
-
-```json
-{
-  "tema": "brincar no parquinho"
-}
-```
-
-**Resposta** (texto puro, uma linha por item)
-
-```
-parquinho|l|playground
-escorregador|s|escorrega
-...
-```
-
-Se não for possível se comunicar com o Ollama, a resposta é o texto `ERRO: Não foi possível comunicar com o Ollama.`
-
-## Estrutura do projeto
-
-```
-aac-system/
-├── pom.xml
-└── src/
-    ├── main/
-    │   ├── java/br/com/fatec/aac/
-    │   │   ├── AacSystemApplication.java     # classe principal
-    │   │   ├── controller/
-    │   │   │   ├── HomeController.java       # serve a página inicial (GET /)
-    │   │   │   └── AacController.java        # endpoint POST /aac/gerar
-    │   │   ├── dto/
-    │   │   │   └── BoardRequest.java         # corpo da requisição (tema)
-    │   │   └── service/
-    │   │       └── OllamaService.java        # prompt, chamada ao Ollama e pós-processamento
-    │   └── resources/
-    │       ├── application.properties
-    │       └── templates/index.html          # interface web
-    └── test/
-        └── java/br/com/fatec/aac/
-            └── AacSystemApplicationTests.java
-```
-
-## Status do projeto
-
-- ✅ Modelo instalado e testado
-- ✅ Requisitos funcionais e não funcionais definidos
-- ✅ Aplicação Spring Boot com interface web
-- ✅ Integração com o Ollama
-- ✅ Geração de pranchas por tema, com tipo e sinônimo de cada item
-
-## Entrega
-
-Entrega da equipe: **02/10**
-
-## Integrantes
-
--Daniel da Silva Carvalho Franco
-- Hélder Costa
-- Yan Vitor Siqueira Bergantin
+Projeto da disciplina do Prof. Bertoti, Banco de Dados, FATEC São José dos Campos, 2026.
