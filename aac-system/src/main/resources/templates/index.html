@@ -1,186 +1,524 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
- 
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gerador AAC</title>
-     
+
     <style>
-         
+        :root {
+            --verbo: #3a9d4a;
+            --substantivo: #f08a24;
+            --adjetivo: #2f7fd1;
+            --pronome: #e6c200;
+            --expressao: #d9548f;
+            --local: #8a5cc2;
+            --outro: #888888;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 30px;
+            color: #222;
+            background: #fafafa;
         }
 
-         
         h1 {
             color: #333;
+            margin-top: 0;
         }
 
-         
+        .barra {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         input {
-            padding: 8px;
-            width: 250px;
+            padding: 10px;
+            width: 280px;
+            max-width: 100%;
+            font-size: 16px;
         }
 
-         
+        select {
+            padding: 10px;
+            font-size: 15px;
+            max-width: 100%;
+        }
+
+        .dica {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
         button {
-            padding: 8px 15px;
+            padding: 10px 18px;
+            font-size: 16px;
             cursor: pointer;
         }
 
-         
-        table {
-            margin-top: 20px;
-            border-collapse: collapse;
-            width: 700px;
+        button:disabled {
+            cursor: wait;
+            opacity: .6;
         }
 
-         
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-        }
-
-         
-        th {
-            background-color: #f0f0f0;
-        }
-
-         
         #mensagem {
             margin-top: 15px;
             font-weight: bold;
+            min-height: 1.2em;
         }
 
-         
+        #mensagem.erro {
+            color: #b00020;
+        }
+
+        /* ---- progresso ---- */
+        #progresso {
+            margin-top: 14px;
+            max-width: 680px;
+        }
+
+        .barra-fundo {
+            height: 14px;
+            background: #e3e3e3;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+
+        .barra-preenchida {
+            height: 100%;
+            width: 0;
+            background: #2f7fd1;
+            transition: width .4s ease;
+        }
+
+        .barra-fundo.indeterminada .barra-preenchida {
+            width: 40%;
+            animation: vai 1.2s infinite ease-in-out;
+        }
+
+        @keyframes vai {
+            0% { margin-left: -40%; }
+            100% { margin-left: 100%; }
+        }
+
+        #progressoTexto {
+            margin-top: 6px;
+            font-size: 14px;
+        }
+
+        #cancelar {
+            margin-top: 8px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .legenda {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .legenda span::before {
+            content: "";
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            border-radius: 3px;
+            vertical-align: middle;
+            background: var(--cor);
+        }
+
+        #grade {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .cartao {
+            --cor: var(--outro);
+            background: #fff;
+            border: 4px solid var(--cor);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cartao.v { --cor: var(--verbo); }
+        .cartao.s { --cor: var(--substantivo); }
+        .cartao.a { --cor: var(--adjetivo); }
+        .cartao.p { --cor: var(--pronome); }
+        .cartao.e { --cor: var(--expressao); }
+        .cartao.l { --cor: var(--local); }
+
+        .imagem {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vazio {
+            border: 2px dashed #bbb;
+            border-radius: 10px;
+            color: #999;
+            font-size: 48px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .carregando {
+            animation: pulsa 1.2s infinite;
+        }
+
+        @keyframes pulsa {
+            50% { opacity: .35; }
+        }
+
+        .palavra {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .sinonimo {
+            font-size: 13px;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        .fonte {
+            font-size: 11px;
+            color: #888;
+            margin-top: 6px;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
-     
 </head>
- 
+
 <body>
- 
+
 <h1>Gerador de Pranchas AAC</h1>
- 
-<input
-        id="tema"
-        type="text"
-        placeholder="Digite um tema">
- 
-<button onclick="gerarPrancha()">
-    Gerar Prancha
-</button>
- 
+
+<div class="barra">
+    <input id="tema" type="text" placeholder="Digite um tema" autocomplete="off">
+    <select id="modo" title="Fonte das imagens">
+        <option value="online">Online: ARASAAC (com apoio da IA local)</option>
+        <option value="offline">Offline: somente IA local (Stable Diffusion)</option>
+    </select>
+    <button id="botao" onclick="gerarPrancha()">Gerar Prancha</button>
+</div>
+
+<div id="dica" class="dica"></div>
 <div id="mensagem"></div>
- 
-<table id="tabelaResultado">
-     
-    <thead>
-     
-    <tr>
-        <th>Palavra</th>
-        <th>Tipo</th>
-        <th>Sinônimo</th>
-    </tr>
-     
-    </thead>
-     
-    <tbody id="corpoTabela">
-     
-    </tbody>
-     
-</table>
- 
+
+<div id="progresso" hidden>
+    <div class="barra-fundo" id="barraFundo" role="progressbar" aria-label="Progresso da prancha">
+        <div class="barra-preenchida" id="barraPreenchida"></div>
+    </div>
+    <div id="progressoTexto" aria-live="polite"></div>
+    <button id="cancelar" onclick="cancelarGeracao()">Cancelar</button>
+</div>
+
+<div class="legenda" id="legenda">
+    <span style="--cor: var(--verbo)">verbo</span>
+    <span style="--cor: var(--substantivo)">substantivo</span>
+    <span style="--cor: var(--adjetivo)">adjetivo</span>
+    <span style="--cor: var(--pronome)">pronome</span>
+    <span style="--cor: var(--expressao)">expressão</span>
+    <span style="--cor: var(--local)">local</span>
+</div>
+
+<div id="grade"></div>
+
+<footer>
+    Pictogramas: <a href="https://arasaac.org" target="_blank" rel="noopener">ARASAAC</a>
+    (Governo de Aragão), licença CC BY-NC-SA. Uso não comercial.
+</footer>
+
 <script>
 
-    async function gerarPrancha() {
+    const DICAS = {
+        "online": "ARASAAC primeiro; a IA local só entra se não houver pictograma. "
+            + "Precisa de internet na primeira busca de cada palavra (depois fica em cache).",
+        "offline": "Somente IA local (Stable Diffusion), sem internet. "
+            + "A primeira geração pode levar vários minutos; imagens já geradas ficam em cache."
+    };
 
-        const tema =
-            document.getElementById("tema").value;
+    const NOMES_FONTE = {
+        "arasaac": "ARASAAC",
+        "ia-local": "IA local",
+        "nenhuma": "sem imagem"
+    };
 
-        const mensagem =
-            document.getElementById("mensagem");
+    const SEM_IMAGEM = {url: null, fonte: "nenhuma"};
 
-        const corpoTabela =
-            document.getElementById("corpoTabela");
+    // estado da geração em andamento (null quando não há)
+    let estado = null;
+    let temporizador = null;
 
-        corpoTabela.innerHTML = "";
+    function el(id) {
+        return document.getElementById(id);
+    }
 
-        if (!tema.trim()) {
+    function criar(tag, classe, texto) {
+        const e = document.createElement(tag);
+        if (classe) e.className = classe;
+        if (texto !== undefined) e.textContent = texto;
+        return e;
+    }
 
-            mensagem.innerText =
-                "Digite um tema.";
+    function atualizarDica() {
+        el("dica").textContent = DICAS[el("modo").value];
+    }
 
-            return;
+    function formatarTempo(ms) {
+        const s = Math.max(0, Math.round(ms / 1000));
+        const m = Math.floor(s / 60);
+        return String(m).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    }
+
+    // ------------------------------------------------------------- cartões
+
+    function areaVazia(palavra) {
+        return criar("div", "imagem vazio", palavra.charAt(0));
+    }
+
+    function criarCartao(item) {
+        const cartao = criar("div", "cartao " + (item.tipo || ""));
+        const area = criar("div", "imagem vazio carregando", "…");
+        cartao.appendChild(area);
+
+        cartao.appendChild(criar("div", "palavra", item.palavra));
+        if (item.sinonimo && item.sinonimo.toLowerCase() !== item.palavra.toLowerCase()) {
+            cartao.appendChild(criar("div", "sinonimo", item.sinonimo));
+        }
+        const fonte = criar("div", "fonte", (item.tipoNome || "") + " · aguardando imagem");
+        cartao.appendChild(fonte);
+
+        return {elemento: cartao, area: area, fonte: fonte, item: item};
+    }
+
+    function aplicarImagem(cartao, dados) {
+        let nova;
+        if (dados.url) {
+            nova = criar("img", "imagem");
+            nova.src = dados.url;
+            nova.alt = cartao.item.palavra;
+            nova.onerror = () => nova.replaceWith(areaVazia(cartao.item.palavra));
+        } else {
+            nova = areaVazia(cartao.item.palavra);
+        }
+        cartao.area.replaceWith(nova);
+        cartao.area = nova;
+        cartao.fonte.textContent = (cartao.item.tipoNome || "") + " · "
+            + (NOMES_FONTE[dados.fonte] || dados.fonte);
+    }
+
+    // ------------------------------------------------------------ progresso
+
+    function mostrarProgresso(indeterminado, texto) {
+        el("progresso").hidden = false;
+        el("barraFundo").classList.toggle("indeterminada", indeterminado);
+        if (indeterminado) el("barraPreenchida").style.width = "";
+        el("progressoTexto").textContent = texto;
+    }
+
+    function esconderProgresso() {
+        clearInterval(temporizador);
+        temporizador = null;
+        estado = null;
+        el("progresso").hidden = true;
+    }
+
+    /**
+     * Estimativa: média das últimas 3 imagens x imagens que faltam,
+     * descontando o tempo já gasto na imagem atual. Usar só as últimas 3
+     * evita que imagens que vieram do cache (rápidas) distorçam a conta.
+     */
+    function atualizarProgresso() {
+        if (!estado) return;
+
+        const agora = Date.now();
+        const decorrido = agora - estado.inicio;
+        const naAtual = agora - estado.inicioAtual;
+        const ultimas = estado.duracoes.slice(-3);
+        const media = ultimas.length
+            ? ultimas.reduce((a, b) => a + b, 0) / ultimas.length
+            : null;
+
+        const fracaoAtual = media ? Math.min(0.95, naAtual / media) : 0;
+        const pct = Math.min(100, ((estado.feitas + fracaoAtual) / estado.total) * 100);
+        el("barraPreenchida").style.width = pct.toFixed(1) + "%";
+
+        let restante = "calculando estimativa...";
+        if (media) {
+            const ms = media * (estado.total - estado.feitas) - naAtual;
+            restante = ms > 0 ? "restante ≈ " + formatarTempo(ms) : "finalizando...";
         }
 
-        mensagem.innerText =
-            "Gerando prancha...";
+        const numero = Math.min(estado.feitas + 1, estado.total);
+        el("progressoTexto").textContent =
+            "Imagem " + numero + " de " + estado.total + " (" + estado.atual + ")"
+            + " · decorrido " + formatarTempo(decorrido)
+            + " · " + restante
+            + (estado.cancelar ? " · cancelando após esta imagem..." : "");
+    }
 
-        try {
-
-            const resposta =
-                await fetch("/aac/gerar", {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        tema: tema
-                    })
-
-                });
-
-            const texto =
-                await resposta.text();
-
-            if (texto.startsWith("ERRO")) {
-
-                mensagem.innerText = texto;
-                return;
-            }
-
-            mensagem.innerText =
-                "Prancha gerada com sucesso.";
-
-            const linhas =
-                texto.split("\n");
-
-            linhas.forEach(linha => {
-
-                const partes =
-                    linha.split("|");
-
-                if (partes.length === 3) {
-
-                    const novaLinha =
-                        document.createElement("tr");
-
-                    novaLinha.innerHTML =
-                        `<td>${partes[0]}</td>
-<td>${partes[1]}</td>
-<td>${partes[2]}</td>`;
-
-                    corpoTabela.appendChild(
-                        novaLinha
-                    );
-                }
-
-            });
-
-        } catch (erro) {
-
-            mensagem.innerText =
-                "Erro ao comunicar com o servidor.";
-
+    function cancelarGeracao() {
+        if (estado) {
+            estado.cancelar = true;
+            atualizarProgresso();
         }
     }
 
+    // -------------------------------------------------------------- geração
+
+    async function pedirImagem(item, modo) {
+        try {
+            const resposta = await fetch("/aac/imagem", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    palavra: item.palavra,
+                    sinonimo: item.sinonimo,
+                    modo: modo
+                })
+            });
+            return resposta.ok ? await resposta.json() : SEM_IMAGEM;
+        } catch (e) {
+            return SEM_IMAGEM; // uma imagem com problema não derruba a prancha
+        }
+    }
+
+    async function gerarPrancha() {
+
+        const tema = el("tema").value;
+        const modo = el("modo").value;
+        const mensagem = el("mensagem");
+        const grade = el("grade");
+
+        if (estado) return; // já há uma geração em andamento
+
+        grade.replaceChildren();
+        mensagem.className = "";
+
+        if (!tema.trim()) {
+            mensagem.textContent = "Digite um tema.";
+            return;
+        }
+
+        mensagem.textContent = "";
+        el("botao").disabled = true;
+        el("modo").disabled = true;
+        estado = {total: 0, feitas: 0, duracoes: [], inicio: Date.now(),
+            inicioAtual: Date.now(), atual: "", cancelar: false};
+        mostrarProgresso(true, "Gerando as palavras com o modelo de IA (Ollama)...");
+        el("cancelar").hidden = true; // só faz sentido na etapa das imagens
+
+        try {
+
+            // etapa 1: palavras (rápida)
+            const resposta = await fetch("/aac/palavras", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({tema: tema, modo: modo})
+            });
+
+            if (!resposta.ok) {
+                let texto = "Erro ao gerar a prancha.";
+                try {
+                    const corpo = await resposta.json();
+                    if (corpo.erro) texto = corpo.erro;
+                } catch (e) { /* corpo sem JSON */ }
+                mensagem.className = "erro";
+                mensagem.textContent = texto;
+                return;
+            }
+
+            const itens = await resposta.json();
+
+            if (itens.length === 0) {
+                mensagem.textContent = "O modelo não retornou itens. Tente outro tema.";
+                return;
+            }
+
+            const cartoes = itens.map(item => {
+                const c = criarCartao(item);
+                grade.appendChild(c.elemento);
+                return c;
+            });
+
+            // etapa 2: imagens, uma a uma (a IA local pode levar minutos por imagem)
+            estado.total = itens.length;
+            estado.inicio = Date.now();
+            mostrarProgresso(false, "");
+            el("cancelar").hidden = false;
+            temporizador = setInterval(atualizarProgresso, 1000);
+
+            let feitasAteAqui = 0;
+            for (let i = 0; i < itens.length; i++) {
+                if (estado.cancelar) break;
+
+                estado.atual = itens[i].palavra;
+                estado.inicioAtual = Date.now();
+                atualizarProgresso();
+
+                const dados = await pedirImagem(itens[i], modo);
+
+                estado.duracoes.push(Date.now() - estado.inicioAtual);
+                estado.feitas = ++feitasAteAqui;
+                aplicarImagem(cartoes[i], dados);
+                atualizarProgresso();
+            }
+
+            // imagens que não chegaram a ser pedidas (cancelamento)
+            for (let i = feitasAteAqui; i < cartoes.length; i++) {
+                aplicarImagem(cartoes[i], SEM_IMAGEM);
+            }
+
+            const total = formatarTempo(Date.now() - estado.inicio);
+            mensagem.textContent = estado.cancelar
+                ? "Geração cancelada (" + feitasAteAqui + " de " + itens.length + " imagens, em " + total + ")."
+                : "Prancha gerada com sucesso em " + total + ".";
+
+        } catch (erro) {
+
+            mensagem.className = "erro";
+            mensagem.textContent = "Erro ao comunicar com o servidor.";
+
+        } finally {
+            esconderProgresso();
+            el("botao").disabled = false;
+            el("modo").disabled = false;
+        }
+    }
+
+    el("tema").addEventListener("keydown", e => {
+        if (e.key === "Enter") gerarPrancha();
+    });
+
+    el("modo").addEventListener("change", atualizarDica);
+    atualizarDica();
+
 </script>
- 
+
 </body>
 </html>
